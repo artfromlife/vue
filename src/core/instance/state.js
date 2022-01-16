@@ -48,6 +48,7 @@ export function proxy (target: Object, sourceKey: string, key: string) {
 
 export function initState (vm: Component) {
   vm._watchers = []
+  // _watchers 数组 ？
   const opts = vm.$options
   if (opts.props) initProps(vm, opts.props)
   if (opts.methods) initMethods(vm, opts.methods)
@@ -286,6 +287,8 @@ function initMethods (vm: Component, methods: Object) {
         )
       }
     }
+    // 由于是用的 Function.prototype.bind 方法， this 指向
+    // 如果methods 中的成员不是方法，不会加入到vm中
     vm[key] = typeof methods[key] !== 'function' ? noop : bind(methods[key], vm)
   }
 }

@@ -298,27 +298,34 @@ export function validateComponentName (name: string) {
 function normalizeProps (options: Object, vm: ?Component) {
   const props = options.props
   if (!props) return
+  // 选项中没有 props 就返回，
   const res = {}
   let i, val, name
+  // 如果选项中的props是一个数组 ,
   if (Array.isArray(props)) {
     i = props.length
     while (i--) {
       val = props[i]
       if (typeof val === 'string') {
-        name = camelize(val)
+        name = camelize(val) // 驼峰命名 props
+        // console.log(camelize('kebab-case'))
         res[name] = { type: null }
+        // 数组 props 的情况下 也要给他转成一个对象
       } else if (process.env.NODE_ENV !== 'production') {
         warn('props must be strings when using array syntax.')
       }
     }
+    //如果选项中的props 是一个存粹对象
   } else if (isPlainObject(props)) {
     for (const key in props) {
       val = props[key]
-      name = camelize(key)
+      name = camelize(key) // props 命名全部驼峰化
       res[name] = isPlainObject(val)
         ? val
         : { type: val }
+      // 是对象的话，就不管他，不是对象，给你用一个type包一下，只是简化一下写法。。。
     }
+    // console.log({res})
   } else if (process.env.NODE_ENV !== 'production') {
     warn(
       `Invalid value for option "props": expected an Array or an Object, ` +
@@ -398,7 +405,7 @@ export function mergeOptions (
     child = child.options
   }
 
-  normalizeProps(child, vm)
+  normalizeProps(child, vm) // 此方法并无操作 vm 实例， 只是处理了 child 的 props ??? ,传入 vm 只是为了报错信息
   normalizeInject(child, vm)
   normalizeDirectives(child)
 
@@ -408,9 +415,11 @@ export function mergeOptions (
   // Only merged options has the _base property.
   if (!child._base) {
     if (child.extends) {
+      // 先把parent 和 extends 的 选项合并一下
       parent = mergeOptions(parent, child.extends, vm)
     }
     if (child.mixins) {
+      // 再把mixins 中的选项合并一下
       for (let i = 0, l = child.mixins.length; i < l; i++) {
         parent = mergeOptions(parent, child.mixins[i], vm)
       }
@@ -427,8 +436,15 @@ export function mergeOptions (
       mergeField(key)
     }
   }
+
+  /**
+   *
+   * @param key
+   */
   function mergeField (key) {
+    // 读取关于每个选项的合并策略 ？？？ ，没有的话用默认的合并策略，儿子有值用儿子，没有用爹
     const strat = strats[key] || defaultStrat
+    //  合并后的选项 是通过一个策略函数合并的，就是儿子会把爹覆盖掉，如果有的话
     options[key] = strat(parent[key], child[key], vm, key)
   }
   return options
