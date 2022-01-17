@@ -5148,9 +5148,14 @@
   // 4. 如果该函数没有返回对象，则返回this
 
   initMixin(Vue);
+  // 原型上挂载 _init() 方法
   stateMixin(Vue);
+  // 原型上使用 $data 代理实例的_data , 用$props 代理实例的 _props
+  // 原型上添加 $set , $delete , $watch 方法
   eventsMixin(Vue);
+  // 原型上添加 $on , $once , $emit , $off 方法
   lifecycleMixin(Vue);
+  // 原型上添加 _update , $forceUpdate , $destroy 方法
   renderMixin(Vue);
 
   /*  */
