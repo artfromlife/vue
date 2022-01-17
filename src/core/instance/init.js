@@ -42,7 +42,7 @@ export function initMixin (Vue: Class<Component>) {
       // internal component options needs special treatment.
       initInternalComponent(vm, options)
     } else {
-      console.log(vm.constructor === Vue) // -> true
+      console.log(vm.constructor === Vue) // vm.constructor === Object.getPrototypeOf(vm).constructor
       // 这里初始化 实例 $options 属性 , vm.constructor 其实就是 Vue构造函数本身
       // 调用 mergeOptions 方法，传入3个参数, 第一个参数就是一个options,就是把所有的 options 根据混入策略混在一起
       // 包括 extend mixin , 这应该是一个浅拷贝吧
