@@ -143,6 +143,10 @@ export function mountComponent (
   el: ?Element,
   hydrating?: boolean
 ): Component {
+  /**
+   *  现在实例上有了一个 render 函数
+   *  $el 拿到的是要替换的DOM元素节点
+   */
   vm.$el = el
   if (!vm.$options.render) {
     vm.$options.render = createEmptyVNode
@@ -166,7 +170,7 @@ export function mountComponent (
   }
   callHook(vm, 'beforeMount')
 
-  let updateComponent
+  let updateComponent // 执行实例的_update 方法 ， 传入vNode
   /* istanbul ignore if */
   if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
     updateComponent = () => {
@@ -194,6 +198,12 @@ export function mountComponent (
   // we set this to vm._watcher inside the watcher's constructor
   // since the watcher's initial patch may call $forceUpdate (e.g. inside child
   // component's mounted hook), which relies on vm._watcher being already defined
+  /**
+   *   渲染相关的  watcher  watch  整个实例？？？？？
+   *   这个 回调会立即执行吗？
+   *   是的 ，如果你在options 中 传入 lazy:true 就不会立即执行了
+   *   所以new 这个 Watcher 的时候就在最后把 callback 执行了
+   */
   new Watcher(vm, updateComponent, noop, {
     before () {
       if (vm._isMounted && !vm._isDestroyed) {

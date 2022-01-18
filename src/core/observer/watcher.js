@@ -61,6 +61,7 @@ export default class Watcher {
   ) {
     this.vm = vm
     if (isRenderWatcher) {
+      // 是不是渲染相关的watcher 有的话，通过 _watcher 可以拿到这个 watcher 实例
       vm._watcher = this
     }
     vm._watchers.push(this)
@@ -107,13 +108,16 @@ export default class Watcher {
 
   /**
    * Evaluate the getter, and re-collect dependencies.
-   * 这应该只是原型上的一个get方法
+   * 这应该只是原型上的一个get方法 , get 方法触发 传入 watcher 的 回调
    */
   get () {
+    // 如果现在是在渲染 Dep.target 就是这个组件渲染 watcher
     pushTarget(this)
     let value
+    // 引来隐去 拿到渲染的组件实例
     const vm = this.vm
     try {
+      // 触发回调（如果是渲染的watcher 就会执行 _update）
       value = this.getter.call(vm, vm)
     } catch (e) {
       if (this.user) {
@@ -128,6 +132,7 @@ export default class Watcher {
         traverse(value)
       }
       popTarget()
+      // 当前的watcher 回调执行完了，
       this.cleanupDeps()
     }
     return value

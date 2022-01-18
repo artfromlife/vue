@@ -3590,6 +3590,8 @@
         // when parent component is patched.
         currentRenderingInstance = vm;
         vnode = render.call(vm._renderProxy, vm.$createElement);
+        console.log(vnode);
+        debugger
       } catch (e) {
         handleError(e, vm, "render");
         // return error render result,
@@ -4054,6 +4056,10 @@
     el,
     hydrating
   ) {
+    /**
+     *  现在实例上有了一个 render 函数
+     *  $el 拿到的是要替换的DOM元素节点
+     */
     vm.$el = el;
     if (!vm.$options.render) {
       vm.$options.render = createEmptyVNode;
@@ -4077,7 +4083,7 @@
     }
     callHook(vm, 'beforeMount');
 
-    var updateComponent;
+    var updateComponent; // 执行实例的_update 方法 ， 传入vNode
     /* istanbul ignore if */
     if ( config.performance && mark) {
       updateComponent = function () {
@@ -4105,6 +4111,12 @@
     // we set this to vm._watcher inside the watcher's constructor
     // since the watcher's initial patch may call $forceUpdate (e.g. inside child
     // component's mounted hook), which relies on vm._watcher being already defined
+    /**
+     *   渲染相关的  watcher  watch  整个实例？？？？？
+     *   这个 回调会立即执行吗？
+     *   是的 ，如果你在options 中 传入 lazy:true 就不会立即执行了
+     *   所以new 这个 Watcher 的时候就在最后把 callback 执行了
+     */
     new Watcher(vm, updateComponent, noop, {
       before: function before () {
         if (vm._isMounted && !vm._isDestroyed) {
@@ -4461,6 +4473,7 @@
   ) {
     this.vm = vm;
     if (isRenderWatcher) {
+      // 是不是渲染相关的watcher 有的话，通过 _watcher 可以拿到这个 watcher 实例
       vm._watcher = this;
     }
     vm._watchers.push(this);
@@ -4506,13 +4519,16 @@
 
   /**
    * Evaluate the getter, and re-collect dependencies.
-   * 这应该只是原型上的一个get方法
+   * 这应该只是原型上的一个get方法 , get 方法触发 传入 watcher 的 回调
    */
   Watcher.prototype.get = function get () {
+    // 如果现在是在渲染 Dep.target 就是这个组件渲染 watcher
     pushTarget(this);
     var value;
+    // 引来隐去 拿到渲染的组件实例
     var vm = this.vm;
     try {
+      // 触发回调（如果是渲染的watcher 就会执行 _update）
       value = this.getter.call(vm, vm);
     } catch (e) {
       if (this.user) {
@@ -4527,6 +4543,7 @@
         traverse(value);
       }
       popTarget();
+      // 当前的watcher 回调执行完了，
       this.cleanupDeps();
     }
     return value
@@ -5027,7 +5044,7 @@
         // internal component options needs special treatment.
         initInternalComponent(vm, options);
       } else {
-        console.log(vm.constructor === Vue); // -> true
+        console.log(vm.constructor === Vue); // vm.constructor === Object.getPrototypeOf(vm).constructor
         // 这里初始化 实例 $options 属性 , vm.constructor 其实就是 Vue构造函数本身
         // 调用 mergeOptions 方法，传入3个参数, 第一个参数就是一个options,就是把所有的 options 根据混入策略混在一起
         // 包括 extend mixin , 这应该是一个浅拷贝吧
@@ -5159,9 +5176,14 @@
   // 4. 如果该函数没有返回对象，则返回this
 
   initMixin(Vue);
+  // 原型上挂载 _init() 方法
   stateMixin(Vue);
+  // 原型上使用 $data 代理实例的_data , 用$props 代理实例的 _props
+  // 原型上添加 $set , $delete , $watch 方法
   eventsMixin(Vue);
+  // 原型上添加 $on , $once , $emit , $off 方法
   lifecycleMixin(Vue);
+  // 原型上添加 _update , $forceUpdate , $destroy 方法
   renderMixin(Vue);
 
   /*  */
@@ -12046,14 +12068,19 @@
     var el = query(id);
     return el && el.innerHTML
   });
-
+  /**
+   * 先缓存原型上的mount方法
+   */
   var mount = Vue.prototype.$mount;
+
   Vue.prototype.$mount = function (
     el,
     hydrating
   ) {
     el = el && query(el);
-
+    /**
+     * 就是组件　要挂载的 DOM元素节点
+     */
     /* istanbul ignore if */
     if (el === document.body || el === document.documentElement) {
        warn(
@@ -12061,14 +12088,22 @@
       );
       return this
     }
-
+  　//
+    // 挂载方法是实例调用的 , options 就是实例的 $options
+    // 是合并后的 选项对象
+    //
     var options = this.$options;
     // resolve template/el and convert to render function
+    /**
+     * 如果没有写 render 函数的话
+     */
     if (!options.render) {
+      // 取到模板字符串
       var template = options.template;
       if (template) {
         if (typeof template === 'string') {
           if (template.charAt(0) === '#') {
+            // 通过Id 去取到模板 ， 节点元素的 innerHTML 本身就是一个字符串了
             template = idToTemplate(template);
             /* istanbul ignore if */
             if ( !template) {
@@ -12078,7 +12113,7 @@
               );
             }
           }
-        } else if (template.nodeType) {
+        } else if (template.nodeType) { // 你的模板也可是一个真实的DOM　元素
           template = template.innerHTML;
         } else {
           {
@@ -12094,7 +12129,7 @@
         if ( config.performance && mark) {
           mark('compile');
         }
-
+  　　　// 将模板编译成 render 函数
         var ref = compileToFunctions(template, {
           outputSourceRange: "development" !== 'production',
           shouldDecodeNewlines: shouldDecodeNewlines,
@@ -12114,6 +12149,8 @@
         }
       }
     }
+    // 返回的是调用之前原型上 $mount 方法
+    // 只是在这之前进行了添加render 函数的步骤
     return mount.call(this, el, hydrating)
   };
 
