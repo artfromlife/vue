@@ -65,9 +65,9 @@ export function initMixin (Vue: Class<Component>) {
     // 第一步就是根据mergerStrategies合并所有的options 挂载到 vm.$options //
     // 第二部就是初始化关系引用 ， $parent ,$children,$root
     initLifecycle(vm)
-    // 第三步初始化事件
+    // 第三步初始化事件 , 合并后的$options有没有 _parentListeners 至关重要
     initEvents(vm)
-    // 第四步 , 挂载 $slots , $scopedSlots ,$createElement  到实例上去
+    // 第四步 , 挂载 $slots , $scopedSlots ,$createElement  到实例上去 _node , $node
     initRender(vm)
     // 第五步
     callHook(vm, 'beforeCreate')

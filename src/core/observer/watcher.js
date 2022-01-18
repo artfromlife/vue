@@ -35,13 +35,22 @@ export default class Watcher {
   sync: boolean;
   dirty: boolean;
   active: boolean;
-  deps: Array<Dep>;
+  deps: Array<Dep>;  // Dep 和 Watcher 的循环引用
   newDeps: Array<Dep>;
   depIds: SimpleSet;
   newDepIds: SimpleSet;
   before: ?Function;
   getter: Function;
   value: any;
+
+  /**
+   *
+   * @param vm
+   * @param expOrFn
+   * @param cb
+   * @param options
+   * @param isRenderWatcher
+   */
 
   constructor (
     vm: Component,
@@ -98,6 +107,7 @@ export default class Watcher {
 
   /**
    * Evaluate the getter, and re-collect dependencies.
+   * 这应该只是原型上的一个get方法
    */
   get () {
     pushTarget(this)

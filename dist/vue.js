@@ -1032,7 +1032,7 @@
       val = obj[key];
     }
 
-    var childOb = !shallow && observe(val);
+    var childOb = !shallow && observe(val); // 如果val 是个对象，那就递归的observe
     Object.defineProperty(obj, key, {
       enumerable: true,
       configurable: true,
@@ -1066,7 +1066,7 @@
         } else {
           val = newVal;
         }
-        childOb = !shallow && observe(newVal);
+        childOb = !shallow && observe(newVal); // 为何还要执行一遍 ？
         dep.notify();
       }
     });
@@ -4250,11 +4250,12 @@
     pushTarget();
     var handlers = vm.$options[hook];
     var info = hook + " hook";
-    if (handlers) {
+    if (handlers) { // 单一的 hooks 是一个数组 ！
       for (var i = 0, j = handlers.length; i < j; i++) {
         invokeWithErrorHandling(handlers[i], vm, null, vm, info);
       }
     }
+    // _hasHookEvent ??
     if (vm._hasHookEvent) {
       vm.$emit('hook:' + hook);
     }
@@ -4505,6 +4506,7 @@
 
   /**
    * Evaluate the getter, and re-collect dependencies.
+   * 这应该只是原型上的一个get方法
    */
   Watcher.prototype.get = function get () {
     pushTarget(this);
@@ -5045,9 +5047,9 @@
       // 第一步就是根据mergerStrategies合并所有的options 挂载到 vm.$options //
       // 第二部就是初始化关系引用 ， $parent ,$children,$root
       initLifecycle(vm);
-      // 第三步初始化事件
+      // 第三步初始化事件 , 合并后的$options有没有 _parentListeners 至关重要
       initEvents(vm);
-      // 第四步 , 挂载 $slots , $scopedSlots ,$createElement  到实例上去
+      // 第四步 , 挂载 $slots , $scopedSlots ,$createElement  到实例上去 _node , $node
       initRender(vm);
       // 第五步
       callHook(vm, 'beforeCreate');

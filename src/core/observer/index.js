@@ -153,7 +153,7 @@ export function defineReactive (
     val = obj[key]
   }
 
-  let childOb = !shallow && observe(val)
+  let childOb = !shallow && observe(val) // 如果val 是个对象，那就递归的observe
   Object.defineProperty(obj, key, {
     enumerable: true,
     configurable: true,
@@ -187,7 +187,7 @@ export function defineReactive (
       } else {
         val = newVal
       }
-      childOb = !shallow && observe(newVal)
+      childOb = !shallow && observe(newVal) // 为何还要执行一遍 ？
       dep.notify()
     }
   })

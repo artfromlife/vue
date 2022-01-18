@@ -11,15 +11,30 @@
 <body>
 <div id="app">{{msg}}</div>
 <script>
-  new Vue({
+  debugger
+  const app = new Vue({
     el:'#app',
     data:{
-      msg:'hello'
+      msg:'hello',
+      student:{
+        name:'JavaScript',
+        age:24,
+        address:{
+          country:'American'
+        }
+      }
     },
-    props:{
-      xixi:[String],
-      haha:{
-        type:Number
+    watch:{
+      student:{
+        handler(n,o){
+          console.log(n)
+        },
+        deep:true
+      }
+    },
+    computed:{
+      country(){
+        return this.student.address.country
       }
     }
   })

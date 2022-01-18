@@ -339,11 +339,12 @@ export function callHook (vm: Component, hook: string) {
   pushTarget()
   const handlers = vm.$options[hook]
   const info = `${hook} hook`
-  if (handlers) {
+  if (handlers) { // 单一的 hooks 是一个数组 ！
     for (let i = 0, j = handlers.length; i < j; i++) {
       invokeWithErrorHandling(handlers[i], vm, null, vm, info)
     }
   }
+  // _hasHookEvent ??
   if (vm._hasHookEvent) {
     vm.$emit('hook:' + hook)
   }
