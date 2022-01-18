@@ -1527,7 +1527,7 @@
    * Merge two option objects into a new one.
    * Core utility used in both instantiation and inheritance.
    */
-  function mergeOptions (
+  function mergeOptions ( // options , options , VueInstance
     parent,
     child,
     vm
@@ -1539,21 +1539,29 @@
     if (typeof child === 'function') {
       child = child.options;
     }
-
+    /**
+     *  options.props 可能是一个数组，全部规范化成对象的形式！！！
+     */
     normalizeProps(child, vm); // 此方法并无操作 vm 实例， 只是处理了 child 的 props ??? ,传入 vm 只是为了报错信息
+    /**
+     * options.inject 有数组和对象的形式, 全部转化成对象的形式
+     */
     normalizeInject(child, vm);
+    /**
+     * 函数写法的指令规范化成对象写法 ， 就是函数直接绑定到 bind 和 update 属性上
+     */
     normalizeDirectives(child);
 
     // Apply extends and mixins on the child options,
     // but only if it is a raw options object that isn't
     // the result of another mergeOptions call.
     // Only merged options has the _base property.
-    if (!child._base) {
-      if (child.extends) {
+    if (!child._base) { // child 是一个选项 , options._base === (null||undefined)
+      if (child.extends) { // options.extends 也是一个选项
         // 先把parent 和 extends 的 选项合并一下
         parent = mergeOptions(parent, child.extends, vm);
       }
-      if (child.mixins) {
+      if (child.mixins) { // options.mixins是一个选项数组
         // 再把mixins 中的选项合并一下
         for (var i = 0, l = child.mixins.length; i < l; i++) {
           parent = mergeOptions(parent, child.mixins[i], vm);
@@ -1561,9 +1569,10 @@
       }
     }
 
+    // 最终返回的就是这个新的options
     var options = {};
     var key;
-    for (key in parent) {
+    for (key in parent) { // 每一项都根据合并策略进行合并
       mergeField(key);
     }
     for (key in child) {
@@ -5095,7 +5104,7 @@
     // console.log(Ctor.options,'构造函数自己的静态属性 options')
     // console.log(Ctor,'构造函数')
     // console.log(Ctor.super,'构造函数的静态属性 super')
-    if (Ctor.super) { // 对象实例的super属性是啥
+    if (Ctor.super) { // 对象实例的super属性是啥 , 这个super 是使用 Vue.extend 时添加的
       var superOptions = resolveConstructorOptions(Ctor.super);
       var cachedSuperOptions = Ctor.superOptions;
       if (superOptions !== cachedSuperOptions) {

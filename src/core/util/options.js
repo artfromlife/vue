@@ -392,7 +392,7 @@ function assertObjectType (name: string, value: any, vm: ?Component) {
  * Merge two option objects into a new one.
  * Core utility used in both instantiation and inheritance.
  */
-export function mergeOptions (
+export function mergeOptions ( // options , options , VueInstance
   parent: Object,
   child: Object,
   vm?: Component
@@ -404,21 +404,29 @@ export function mergeOptions (
   if (typeof child === 'function') {
     child = child.options
   }
-
+  /**
+   *  options.props 可能是一个数组，全部规范化成对象的形式！！！
+   */
   normalizeProps(child, vm) // 此方法并无操作 vm 实例， 只是处理了 child 的 props ??? ,传入 vm 只是为了报错信息
+  /**
+   * options.inject 有数组和对象的形式, 全部转化成对象的形式
+   */
   normalizeInject(child, vm)
+  /**
+   * 函数写法的指令规范化成对象写法 ， 就是函数直接绑定到 bind 和 update 属性上
+   */
   normalizeDirectives(child)
 
   // Apply extends and mixins on the child options,
   // but only if it is a raw options object that isn't
   // the result of another mergeOptions call.
   // Only merged options has the _base property.
-  if (!child._base) {
-    if (child.extends) {
+  if (!child._base) { // child 是一个选项 , options._base === (null||undefined)
+    if (child.extends) { // options.extends 也是一个选项
       // 先把parent 和 extends 的 选项合并一下
       parent = mergeOptions(parent, child.extends, vm)
     }
-    if (child.mixins) {
+    if (child.mixins) { // options.mixins是一个选项数组
       // 再把mixins 中的选项合并一下
       for (let i = 0, l = child.mixins.length; i < l; i++) {
         parent = mergeOptions(parent, child.mixins[i], vm)
@@ -426,9 +434,10 @@ export function mergeOptions (
     }
   }
 
+  // 最终返回的就是这个新的options
   const options = {}
   let key
-  for (key in parent) {
+  for (key in parent) { // 每一项都根据合并策略进行合并
     mergeField(key)
   }
   for (key in child) {

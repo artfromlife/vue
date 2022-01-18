@@ -124,7 +124,7 @@ export function resolveConstructorOptions (Ctor: Class<Component>) {
   // console.log(Ctor.options,'构造函数自己的静态属性 options')
   // console.log(Ctor,'构造函数')
   // console.log(Ctor.super,'构造函数的静态属性 super')
-  if (Ctor.super) { // 对象实例的super属性是啥
+  if (Ctor.super) { // 对象实例的super属性是啥 , 这个super 是使用 Vue.extend 时添加的
     const superOptions = resolveConstructorOptions(Ctor.super)
     const cachedSuperOptions = Ctor.superOptions
     if (superOptions !== cachedSuperOptions) {
