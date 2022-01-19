@@ -143,10 +143,21 @@ export default class Watcher {
    */
   addDep (dep: Dep) {
     const id = dep.id
+    // 拿到dep的ID
     if (!this.newDepIds.has(id)) {
+      // watcher 实例 维护的 newDepIds 集合中没有这个depId
       this.newDepIds.add(id)
+      // 就添加进去
       this.newDeps.push(dep)
+      // watcher 实例维护的 depsId 中若没有这个 depId
+      // 这个 depsId 是上次watcher 回调执行期间 加入的 deps
+      // 如果这个watcher 之前就触发了 dep.depend
+      // 那么这个watcher 肯定就在 dep.subs 之中了
+      // 所以没必要再次 添加到 dep.subs 中
       if (!this.depIds.has(id)) {
+        // 把这个watcher 放入 dep 维护的订阅者数组 (dep.subs) 中
+        // 这个watcher 就作为一个订阅者 放到这个 dep管理的subs数组中
+        // 每一个 getter 都对应一个 唯一的 dep 实例
         dep.addSub(this)
       }
     }
@@ -156,14 +167,19 @@ export default class Watcher {
    * Clean up for dependency collection.
    */
   cleanupDeps () {
+    // 当前watcher 实例的回调执行完毕之后， 清理deps,也不能说清理
+    // 第一次watcher 被执行的时候，这个deps = []
     let i = this.deps.length
     while (i--) {
       const dep = this.deps[i]
+      // 如果本次回调执行期间， 新加入的 deps 中没有 不存在与老的deps
       if (!this.newDepIds.has(dep.id)) {
+        // 将这个 watcher 从 dep 管理的订阅者数组中拿掉
         dep.removeSub(this)
       }
     }
-    let tmp = this.depIds
+    let tmp = this.depIds // depIds 存的是 发布者Id的集合
+    // 用 depIds 存放watcher 执行期间 产生的 newDepsIds
     this.depIds = this.newDepIds
     this.newDepIds = tmp
     this.newDepIds.clear()

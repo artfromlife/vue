@@ -139,8 +139,8 @@ export function defineReactive (
   customSetter?: ?Function,
   shallow?: boolean
 ) {
-  const dep = new Dep()
-
+  const dep = new Dep() // 每一个dep 类都有一个唯一的Id
+  // 每一个响应式 的 key 都有一个 dep 与之对应 , dep 下管理的是这个 key 的 订阅者（观察者）
   const property = Object.getOwnPropertyDescriptor(obj, key)
   if (property && property.configurable === false) {
     return
@@ -150,7 +150,7 @@ export function defineReactive (
   const getter = property && property.get
   const setter = property && property.set
   if ((!getter || setter) && arguments.length === 2) {
-    val = obj[key]
+    val = obj[key] // 用一个闭包内的变量来代理对 值的访问, 防止出现 死循环
   }
 
   let childOb = !shallow && observe(val) // 如果val 是个对象，那就递归的observe
@@ -159,7 +159,13 @@ export function defineReactive (
     configurable: true,
     get: function reactiveGetter () {
       const value = getter ? getter.call(obj) : val
-      if (Dep.target) {
+      if (Dep.target) { // watcher 的回调执行的时候，会把当前的watcher 放在 Dep.target
+        // 这个就给当前运行的watcher压入一个依赖，压入的就是这个闭包内的dep
+        // 只有在watcher 回调的执行期间才会进行依赖收集
+        // depend() 方法的执行 在当前运行回调的 watcher 管理 当前的 dep , 有判重的处理
+        // 通过判重 , 又会执行watcher 的 实例方法将 watcher 实例 放入 dep 所管理的
+        // 订阅者数组中， 这样这个 watcher 就成为了 这个 val 的订阅者，
+        // dep 实例作为 val 的管理者 , 来管理这些订阅者
         dep.depend()
         if (childOb) {
           childOb.dep.depend()
@@ -174,7 +180,7 @@ export function defineReactive (
       const value = getter ? getter.call(obj) : val
       /* eslint-disable no-self-compare */
       if (newVal === value || (newVal !== newVal && value !== value)) {
-        return
+        return // 如果没有发生值的更新就不会触发
       }
       /* eslint-enable no-self-compare */
       if (process.env.NODE_ENV !== 'production' && customSetter) {
