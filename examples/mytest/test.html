@@ -9,31 +9,34 @@
   <title>Document</title>
 </head>
 <body>
-<div id="app">{{msg}}</div>
+<div id="app">
+  <span style="width: 120px; height: 100px;background-color:pink;">
+  </span>
+  <button @click="handleClick">button</button>
+</div>
 <script>
+  debugger
   const app = new Vue({
     el:'#app',
     data:{
-      msg:'hello',
-      student:{
-        name:'JavaScript',
-        age:24,
-        address:{
-          country:'American'
-        }
+     num:1
+    },
+    computed:{
+      nums(){
+        return this.num
+      }
+    },
+    methods:{
+      handleClick(){
+        ++this.num
       }
     },
     watch:{
-      student:{
-        handler(n,o){
-          console.log(n)
+      num:{
+        handler(){
+          console.log("I am cb")
         },
         deep:true
-      }
-    },
-    computed:{
-      country(){
-        return this.student.address.country
       }
     }
   })

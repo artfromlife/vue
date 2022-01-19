@@ -203,6 +203,8 @@ export function mountComponent (
    *   这个 回调会立即执行吗？
    *   是的 ，如果你在options 中 传入 lazy:true 就不会立即执行了
    *   所以new 这个 Watcher 的时候就在最后把 callback 执行了
+   *   我错了， 执行的是表达式 ？？？？ 第二个参数是表达式
+   *   lazy 不传 会执行 第二个参数为表达式的东西
    */
   new Watcher(vm, updateComponent, noop, {
     before () {

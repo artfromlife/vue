@@ -174,7 +174,7 @@ function initComputed (vm: Component, computed: Object) {
   // computed properties are just getters during SSR
   const isSSR = isServerRendering()
 
-  for (const key in computed) {
+  for (const key in computed) { // computed 里面全是方法 ， 如果不是方法 , 那就是对象有get 和 set  的对象
     const userDef = computed[key]
     const getter = typeof userDef === 'function' ? userDef : userDef.get
     if (process.env.NODE_ENV !== 'production' && getter == null) {
@@ -188,16 +188,16 @@ function initComputed (vm: Component, computed: Object) {
       // create internal watcher for the computed property.
       watchers[key] = new Watcher(
         vm,
-        getter || noop,
+        getter || noop, // 不是传的表达式而是 传的函数
         noop,
-        computedWatcherOptions
+        computedWatcherOptions // 这里传了 lazy true 就不会像 渲染的watcher 那样 ， 会执行 get 方法, push Dep.target 了
       )
     }
 
     // component-defined computed properties are already defined on the
     // component prototype. We only need to define computed properties defined
     // at instantiation here.
-    if (!(key in vm)) {
+    if (!(key in vm)) { //  字段盘中？
       defineComputed(vm, key, userDef)
     } else if (process.env.NODE_ENV !== 'production') {
       if (key in vm.$data) {
@@ -318,7 +318,8 @@ function createWatcher (
   }
   if (typeof handler === 'string') {
     handler = vm[handler]
-  }
+  }// key  handler   {handler , deep ,immediate}
+  debugger
   return vm.$watch(expOrFn, handler, options)
 }
 

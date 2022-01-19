@@ -727,6 +727,7 @@
   };
 
   Dep.prototype.depend = function depend () {
+    console.log("依赖收集中。。。");
     if (Dep.target) {
       Dep.target.addDep(this);
     }
@@ -1018,8 +1019,8 @@
     customSetter,
     shallow
   ) {
-    var dep = new Dep();
-
+    var dep = new Dep(); // 每一个dep 类都有一个唯一的Id
+    // 每一个响应式 的 key 都有一个 dep 与之对应 , dep 下管理的是这个 key 的 订阅者（观察者）
     var property = Object.getOwnPropertyDescriptor(obj, key);
     if (property && property.configurable === false) {
       return
@@ -1029,7 +1030,7 @@
     var getter = property && property.get;
     var setter = property && property.set;
     if ((!getter || setter) && arguments.length === 2) {
-      val = obj[key];
+      val = obj[key]; // 用一个闭包内的变量来代理对 值的访问, 防止出现 死循环
     }
 
     var childOb = !shallow && observe(val); // 如果val 是个对象，那就递归的observe
@@ -1038,7 +1039,14 @@
       configurable: true,
       get: function reactiveGetter () {
         var value = getter ? getter.call(obj) : val;
-        if (Dep.target) {
+        // 只有watcher 回调执行期间才会有Dep.target
+        if (Dep.target) { // watcher 的回调执行的时候，会把当前的watcher 放在 Dep.target
+          // 这个就给当前运行的watcher压入一个依赖，压入的就是这个闭包内的dep
+          // 只有在watcher 回调的执行期间才会进行依赖收集
+          // depend() 方法的执行 在当前运行回调的 watcher 管理 当前的 dep , 有判重的处理
+          // 通过判重 , 又会执行watcher 的 实例方法将 watcher 实例 放入 dep 所管理的
+          // 订阅者数组中， 这样这个 watcher 就成为了 这个 val 的订阅者，
+          // dep 实例作为 val 的管理者 , 来管理这些订阅者
           dep.depend();
           if (childOb) {
             childOb.dep.depend();
@@ -1047,13 +1055,14 @@
             }
           }
         }
+        console.log(("I am getting the " + obj + "." + key + ": " + value) );
         return value
       },
       set: function reactiveSetter (newVal) {
         var value = getter ? getter.call(obj) : val;
         /* eslint-disable no-self-compare */
         if (newVal === value || (newVal !== newVal && value !== value)) {
-          return
+          return // 如果没有发生值的更新就不会触发
         }
         /* eslint-enable no-self-compare */
         if ( customSetter) {
@@ -1065,6 +1074,7 @@
           setter.call(obj, newVal);
         } else {
           val = newVal;
+          console.log(("I am setting the " + obj + "." + key + ": " + newVal) );
         }
         childOb = !shallow && observe(newVal); // 为何还要执行一遍 ？
         dep.notify();
@@ -3591,7 +3601,6 @@
         currentRenderingInstance = vm;
         vnode = render.call(vm._renderProxy, vm.$createElement);
         console.log(vnode);
-        debugger
       } catch (e) {
         handleError(e, vm, "render");
         // return error render result,
@@ -4116,6 +4125,8 @@
      *   这个 回调会立即执行吗？
      *   是的 ，如果你在options 中 传入 lazy:true 就不会立即执行了
      *   所以new 这个 Watcher 的时候就在最后把 callback 执行了
+     *   我错了， 执行的是表达式 ？？？？ 第二个参数是表达式
+     *   lazy 不传 会执行 第二个参数为表达式的东西
      */
     new Watcher(vm, updateComponent, noop, {
       before: function before () {
@@ -4466,7 +4477,7 @@
    */
   var Watcher = function Watcher (
     vm,
-    expOrFn,
+    expOrFn, // 第二个参数不是回调！！！ what ？
     cb,
     options,
     isRenderWatcher
@@ -4499,9 +4510,11 @@
       ;
     // parse expression for getter
     if (typeof expOrFn === 'function') {
+      // 传进来如果是一个函数 ， 默认就是一个回调？？
+      // 又错了 ， 回调需要调用 run 方法才执行 ！！！
       this.getter = expOrFn;
     } else {
-      this.getter = parsePath(expOrFn);
+      this.getter = parsePath(expOrFn); // 如果是字符串 会返回一个函数
       if (!this.getter) {
         this.getter = noop;
          warn(
@@ -4529,6 +4542,10 @@
     var vm = this.vm;
     try {
       // 触发回调（如果是渲染的watcher 就会执行 _update）
+      // 这里如果是用户自定的watcher 的话， 默认不是lazy 的，所以在这里执行了 取监听的值 这个步骤
+      // 当前这个watcher 又在Dep.target 所以触发依赖收集，要先触发getter, 只要是有getter 就会触发
+      // 依赖收集
+      // 先给他一个getter setter , 取值的时候自动触发 依赖收集
       value = this.getter.call(vm, vm);
     } catch (e) {
       if (this.user) {
@@ -4554,10 +4571,21 @@
    */
   Watcher.prototype.addDep = function addDep (dep) {
     var id = dep.id;
+    // 拿到dep的ID
     if (!this.newDepIds.has(id)) {
+      // watcher 实例 维护的 newDepIds 集合中没有这个depId
       this.newDepIds.add(id);
+      // 就添加进去
       this.newDeps.push(dep);
+      // watcher 实例维护的 depsId 中若没有这个 depId
+      // 这个 depsId 是上次watcher 回调执行期间 加入的 deps
+      // 如果这个watcher 之前就触发了 dep.depend
+      // 那么这个watcher 肯定就在 dep.subs 之中了
+      // 所以没必要再次 添加到 dep.subs 中
       if (!this.depIds.has(id)) {
+        // 把这个watcher 放入 dep 维护的订阅者数组 (dep.subs) 中
+        // 这个watcher 就作为一个订阅者 放到这个 dep管理的subs数组中
+        // 每一个 getter 都对应一个 唯一的 dep 实例
         dep.addSub(this);
       }
     }
@@ -4567,14 +4595,19 @@
    * Clean up for dependency collection.
    */
   Watcher.prototype.cleanupDeps = function cleanupDeps () {
+    // 当前watcher 实例的回调执行完毕之后， 清理deps,也不能说清理
+    // 第一次watcher 被执行的时候，这个deps = []
     var i = this.deps.length;
     while (i--) {
       var dep = this.deps[i];
+      // 如果本次回调执行期间， 新加入的 deps 中没有 不存在与老的deps
       if (!this.newDepIds.has(dep.id)) {
+        // 将这个 watcher 从 dep 管理的订阅者数组中拿掉
         dep.removeSub(this);
       }
     }
-    var tmp = this.depIds;
+    var tmp = this.depIds; // depIds 存的是 发布者Id的集合
+    // 用 depIds 存放watcher 执行期间 产生的 newDepsIds
     this.depIds = this.newDepIds;
     this.newDepIds = tmp;
     this.newDepIds.clear();
@@ -4812,7 +4845,7 @@
     // computed properties are just getters during SSR
     var isSSR = isServerRendering();
 
-    for (var key in computed) {
+    for (var key in computed) { // computed 里面全是方法 ， 如果不是方法 , 那就是对象有get 和 set  的对象
       var userDef = computed[key];
       var getter = typeof userDef === 'function' ? userDef : userDef.get;
       if ( getter == null) {
@@ -4826,16 +4859,16 @@
         // create internal watcher for the computed property.
         watchers[key] = new Watcher(
           vm,
-          getter || noop,
+          getter || noop, // 不是传的表达式而是 传的函数
           noop,
-          computedWatcherOptions
+          computedWatcherOptions // 这里传了 lazy true 就不会像 渲染的watcher 那样 ， 会执行 get 方法, push Dep.target 了
         );
       }
 
       // component-defined computed properties are already defined on the
       // component prototype. We only need to define computed properties defined
       // at instantiation here.
-      if (!(key in vm)) {
+      if (!(key in vm)) { //  字段盘中？
         defineComputed(vm, key, userDef);
       } else {
         if (key in vm.$data) {
@@ -4956,7 +4989,8 @@
     }
     if (typeof handler === 'string') {
       handler = vm[handler];
-    }
+    }// key  handler   {handler , deep ,immediate}
+    debugger
     return vm.$watch(expOrFn, handler, options)
   }
 

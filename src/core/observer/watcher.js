@@ -54,7 +54,7 @@ export default class Watcher {
 
   constructor (
     vm: Component,
-    expOrFn: string | Function,
+    expOrFn: string | Function, // 第二个参数不是回调！！！ what ？
     cb: Function,
     options?: ?Object,
     isRenderWatcher?: boolean
@@ -88,9 +88,11 @@ export default class Watcher {
       : ''
     // parse expression for getter
     if (typeof expOrFn === 'function') {
+      // 传进来如果是一个函数 ， 默认就是一个回调？？
+      // 又错了 ， 回调需要调用 run 方法才执行 ！！！
       this.getter = expOrFn
     } else {
-      this.getter = parsePath(expOrFn)
+      this.getter = parsePath(expOrFn) // 如果是字符串 会返回一个函数
       if (!this.getter) {
         this.getter = noop
         process.env.NODE_ENV !== 'production' && warn(
@@ -118,6 +120,10 @@ export default class Watcher {
     const vm = this.vm
     try {
       // 触发回调（如果是渲染的watcher 就会执行 _update）
+      // 这里如果是用户自定的watcher 的话， 默认不是lazy 的，所以在这里执行了 取监听的值 这个步骤
+      // 当前这个watcher 又在Dep.target 所以触发依赖收集，要先触发getter, 只要是有getter 就会触发
+      // 依赖收集
+      // 先给他一个getter setter , 取值的时候自动触发 依赖收集
       value = this.getter.call(vm, vm)
     } catch (e) {
       if (this.user) {

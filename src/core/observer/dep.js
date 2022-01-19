@@ -29,6 +29,7 @@ export default class Dep {
   }
 
   depend () {
+    console.log("依赖收集中。。。")
     if (Dep.target) {
       Dep.target.addDep(this)
     }

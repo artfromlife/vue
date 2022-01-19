@@ -90,7 +90,6 @@ export function renderMixin (Vue: Class<Component>) {
       currentRenderingInstance = vm
       vnode = render.call(vm._renderProxy, vm.$createElement)
       console.log(vnode)
-      debugger
     } catch (e) {
       handleError(e, vm, `render`)
       // return error render result,

@@ -159,6 +159,7 @@ export function defineReactive (
     configurable: true,
     get: function reactiveGetter () {
       const value = getter ? getter.call(obj) : val
+      // 只有watcher 回调执行期间才会有Dep.target
       if (Dep.target) { // watcher 的回调执行的时候，会把当前的watcher 放在 Dep.target
         // 这个就给当前运行的watcher压入一个依赖，压入的就是这个闭包内的dep
         // 只有在watcher 回调的执行期间才会进行依赖收集
@@ -174,6 +175,7 @@ export function defineReactive (
           }
         }
       }
+      console.log(`I am getting the ${obj}.${key}: ${value}` )
       return value
     },
     set: function reactiveSetter (newVal) {
@@ -192,6 +194,7 @@ export function defineReactive (
         setter.call(obj, newVal)
       } else {
         val = newVal
+        console.log(`I am setting the ${obj}.${key}: ${newVal}` )
       }
       childOb = !shallow && observe(newVal) // 为何还要执行一遍 ？
       dep.notify()
